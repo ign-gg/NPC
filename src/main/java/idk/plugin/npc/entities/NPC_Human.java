@@ -3,6 +3,7 @@ package idk.plugin.npc.entities;
 import cn.nukkit.Player;
 import cn.nukkit.entity.EntityHuman;
 import cn.nukkit.entity.data.Skin;
+import cn.nukkit.level.Level;
 import cn.nukkit.level.format.FullChunk;
 import cn.nukkit.nbt.tag.CompoundTag;
 import cn.nukkit.network.protocol.AddPlayerPacket;
@@ -23,7 +24,7 @@ public class NPC_Human extends EntityHuman {
 
     @Override
     public void spawnTo(Player player) {
-        if (!this.hasSpawned.containsKey(player.getLoaderId())) {
+        if (player != null && this.chunk != null && !this.hasSpawned.containsKey(player.getLoaderId()) && player.chunkList.contains(Level.chunkHash(this.chunk.getX(), this.chunk.getZ()))) {
             this.hasSpawned.put(player.getLoaderId(), player);
 
             this.server.updatePlayerListData(this.getUniqueId(), this.getId(), this.getName(), this.checkSkin(this.skin), new Player[]{player});
