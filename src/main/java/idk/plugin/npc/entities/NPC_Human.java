@@ -3,23 +3,26 @@ package idk.plugin.npc.entities;
 import cn.nukkit.Player;
 import cn.nukkit.entity.EntityHuman;
 import cn.nukkit.entity.data.Skin;
+import cn.nukkit.entity.data.StringEntityData;
 import cn.nukkit.level.Level;
 import cn.nukkit.level.format.FullChunk;
 import cn.nukkit.nbt.tag.CompoundTag;
 import cn.nukkit.network.protocol.AddPlayerPacket;
 
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class NPC_Human extends EntityHuman {
+
+    private String currentScoreTag;
 
     public NPC_Human(FullChunk chunk, CompoundTag nbt) {
         super(chunk, nbt);
         if (namedTag.contains("Scale")) {
             setScale(namedTag.getFloat("Scale"));
         }
-        if (namedTag.contains("ScoreTag")) {
-            setScoreTag(namedTag.getString("ScoreTag"));
-        }
+        updateScoreTag();
     }
 
     @Override
@@ -60,5 +63,45 @@ public class NPC_Human extends EntityHuman {
             skin.setFullSkinId(UUID.randomUUID().toString());
         }
         return skin;
+    }
+
+    public boolean onUpdate(int tick) {
+        if (tick % 40 == 0) {
+            updateScoreTag();
+        }
+        return true;
+    }
+
+    private void updateScoreTag() {
+        String tag = namedTag.getString("ScoreTag");
+        if (tag.isEmpty()) return;
+        tag = replacePlayers(tag);
+        if (!tag.equals(this.currentScoreTag)) {
+            this.currentScoreTag = tag;
+            this.setDataProperty(new StringEntityData(DATA_SCORE_TAG, tag));
+        }
+    }
+
+    private static final Pattern pattern = Pattern.compile("%playersof\\s+([\\w-]+)");
+
+    private String replacePlayers(String input) {
+        Matcher matcher = pattern.matcher(input);
+
+        StringBuffer outputBuffer = new StringBuffer();
+        while (matcher.find()) {
+            String worldName = matcher.group(1);
+            int playersCount = -1;
+
+            Level l = getServer().getLevelByName(worldName);
+            if (l != null) {
+                playersCount = l.getPlayers().size();
+            }
+
+            matcher.appendReplacement(outputBuffer, Integer.toString(playersCount));
+        }
+
+        matcher.appendTail(outputBuffer);
+
+        return outputBuffer.toString();
     }
 }
